@@ -14,12 +14,12 @@ timezone: Asia/Seoul
 # jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
 # ↓ --------------------------
 
-title: SeungBeom's Dev Blog # the main title
+title: SeungBeom.dev # the main title
 
-tagline: 개발 기록과 배움을 정리하는 공간 # it will display as the subtitle
+tagline: "매일 성장하는 개발자의 기록" # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
-  개발자 현승범의 기술 블로그입니다.
+  매일 CS 지식과 개발 경험을 기록하는 블로그입니다. 함께 성장해요!
 
 # Fill in the protocol & hostname for your site.
 # E.g. 'https://username.github.io', note that it does not end with a '/'.
