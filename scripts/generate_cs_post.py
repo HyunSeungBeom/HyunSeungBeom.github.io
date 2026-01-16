@@ -7,7 +7,7 @@ Gemini API를 사용하여 랜덤 CS 주제에 대한 글을 생성합니다.
 import os
 import random
 from datetime import datetime
-import google.generativeai as genai
+from google import genai
 
 # 프론트엔드 & DevOps 심화 주제 목록
 CS_TOPICS = [
@@ -110,8 +110,7 @@ def generate_post_content(topic: str) -> str:
     if not api_key:
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았습니다.")
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=api_key)
 
     prompt = f"""
 당신은 시니어 프론트엔드 개발자이자 DevOps 전문가입니다. 다음 주제에 대해 심화 기술 블로그 포스트를 작성해주세요.
@@ -179,7 +178,10 @@ def generate_post_content(topic: str) -> str:
 - 면접 관련 내용은 포함하지 않음
 """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+    )
     return response.text
 
 def create_post_file(topic: str, content: str):
@@ -199,7 +201,7 @@ def create_post_file(topic: str, content: str):
 title: "[Deep Dive] {topic}"
 date: {time_str}
 categories: [개발뉴스]
-tags: [CS, 심화, 면접]
+tags: [CS, 심화]
 ---
 
 """
