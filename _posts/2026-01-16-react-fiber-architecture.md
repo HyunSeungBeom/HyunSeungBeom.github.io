@@ -2,64 +2,91 @@
 title: "[Deep Dive] React Fiber Architecture와 Reconciliation"
 date: 2026-01-16 10:00:00 +0900
 categories: [개발뉴스]
-tags: [React, 심화, 면접]
+tags: [React, 심화]
 ---
 
-## 개요
+## TL;DR
 
-React 16에서 도입된 **Fiber Architecture**는 React의 핵심 알고리즘을 완전히 재작성한 것입니다. 왜 이런 대규모 변경이 필요했을까요?
+React Fiber는 렌더링 작업을 작은 단위로 쪼개서 중단/재개할 수 있게 만든 아키텍처로, UI 블로킹 없이 부드러운 사용자 경험을 제공한다.
 
-기존 Stack Reconciler의 문제:
-- 동기적으로 전체 트리를 한 번에 처리
-- 작업 중간에 멈출 수 없음
-- 긴 작업 시 메인 스레드 블로킹 → UI 버벅임
+## 선행 지식
 
-## 핵심 원리
+- React 기본 개념 (컴포넌트, state, props)
+- Virtual DOM이 무엇인지
+- JavaScript 이벤트 루프 기초
 
-### Fiber란?
+## 탄생 배경
 
-Fiber는 **작업 단위(unit of work)**를 나타내는 JavaScript 객체입니다.
+React 15까지는 **Stack Reconciler**를 사용했다. 이름 그대로 콜 스택 기반으로 동작했는데, 치명적인 문제가 있었다.
+
+**문제점:**
+- 컴포넌트 트리가 크면 렌더링에 수백 ms 소요
+- 렌더링 중간에 멈출 수 없음 (동기적 처리)
+- 그동안 메인 스레드 블로킹 → 입력 지연, 애니메이션 끊김
+
+예를 들어, 1000개의 아이템을 렌더링하면 그 작업이 끝날 때까지 사용자의 클릭, 타이핑에 반응할 수 없었다.
+
+## 역사와 발전 과정
+
+| 시점 | 내용 |
+|------|------|
+| 2016 | Facebook의 Sebastian Markbage가 Fiber 설계 시작 |
+| 2017.09 | React 16 출시, Fiber 아키텍처 도입 |
+| 2019 | Concurrent Mode 실험적 도입 |
+| 2022 | React 18에서 Concurrent Features 정식 출시 |
+
+Sebastian Markbage는 "렌더링 작업을 requestIdleCallback처럼 브라우저의 여유 시간에 조금씩 처리하면 어떨까?"라는 아이디어에서 출발했다.
+
+## 개념 정의
+
+**Fiber**는 두 가지 의미를 가진다:
+
+1. **아키텍처**: React의 새로운 재조정(Reconciliation) 엔진
+2. **데이터 구조**: 컴포넌트 인스턴스와 작업 정보를 담는 JavaScript 객체
 
 ```typescript
 interface Fiber {
-  type: any;           // 컴포넌트 타입 (함수, 클래스, 'div' 등)
+  type: any;              // 'div', MyComponent 등
   key: string | null;
-  stateNode: any;      // 실제 DOM 노드 또는 클래스 인스턴스
-  child: Fiber | null;
-  sibling: Fiber | null;
-  return: Fiber | null; // 부모 Fiber
-  alternate: Fiber | null; // 이전 렌더의 Fiber (Double Buffering)
-  effectTag: number;   // 수행할 작업 (Placement, Update, Deletion)
-  // ...
+  stateNode: any;         // 실제 DOM 노드
+  child: Fiber | null;    // 첫 번째 자식
+  sibling: Fiber | null;  // 다음 형제
+  return: Fiber | null;   // 부모
+  alternate: Fiber | null; // 이전 렌더의 Fiber
+  flags: number;          // 수행할 작업 플래그
 }
 ```
 
-### Double Buffering
+## 동작 원리
 
-React는 두 개의 Fiber 트리를 유지합니다:
-- **current**: 현재 화면에 렌더링된 트리
-- **workInProgress**: 다음 렌더링을 위해 작업 중인 트리
+### 1. Double Buffering
+
+React는 두 개의 Fiber 트리를 유지한다:
 
 ```
-current tree          workInProgress tree
-     A        <-->          A'
-    / \                    / \
-   B   C                  B'  C'
+current (화면에 보이는 것)    workInProgress (작업 중)
+        App                          App'
+       /   \                        /   \
+   Header  Main      <--->     Header'  Main'
+             |                          |
+           List                       List'
 ```
 
-### 작업 우선순위 (Lane)
+작업이 완료되면 포인터만 교체하여 workInProgress가 current가 된다.
+
+### 2. 작업 우선순위
 
 ```typescript
-const SyncLane = 0b0001;          // 동기 (클릭 등)
-const InputContinuousLane = 0b0010; // 연속 입력 (드래그)
-const DefaultLane = 0b0100;        // 일반 업데이트
-const IdleLane = 0b1000;          // 유휴 시간 작업
+// Lane 우선순위 (숫자가 작을수록 높음)
+SyncLane           // 클릭, 입력 등 즉시 반응 필요
+InputContinuousLane // 드래그
+DefaultLane        // 일반 setState
+IdleLane           // 백그라운드 작업
 ```
 
-## Reconciliation 과정
+### 3. 렌더 단계 분리
 
-### 1. Render Phase (중단 가능)
-
+**Render Phase** (중단 가능):
 ```typescript
 function workLoopConcurrent() {
   while (workInProgress !== null && !shouldYield()) {
@@ -68,61 +95,86 @@ function workLoopConcurrent() {
 }
 ```
 
-`shouldYield()`로 브라우저에게 제어권을 넘길지 체크합니다.
+**Commit Phase** (중단 불가):
+- 실제 DOM 조작
+- useLayoutEffect 실행
 
-### 2. Commit Phase (중단 불가)
+## 실무 활용
 
-실제 DOM 변경을 적용하는 단계:
-- BeforeMutation: `getSnapshotBeforeUpdate`
-- Mutation: DOM 조작
-- Layout: `useLayoutEffect`, `componentDidMount`
-
-## 성능 및 트레이드오프
-
-| 방식 | 장점 | 단점 |
-|------|------|------|
-| Stack (구버전) | 단순, 예측 가능 | UI 블로킹 |
-| Fiber (현재) | 부드러운 UX, 우선순위 | 복잡성 증가, 메모리 사용 |
-
-## 면접 Deep Dive
-
-**Q1: Virtual DOM Diffing의 시간복잡도가 O(n)인 이유는?**
-
-A: 일반적인 트리 비교는 O(n³)이지만, React는 두 가지 휴리스틱을 적용합니다:
-1. 다른 타입의 요소는 다른 트리를 생성한다고 가정
-2. key prop으로 자식 요소의 안정성 힌트 제공
-
-**Q2: useTransition과 useDeferredValue의 차이는?**
-
-A:
-- `useTransition`: 상태 업데이트 자체를 낮은 우선순위로 표시
-- `useDeferredValue`: 값의 "지연된 버전"을 반환, 긴급한 업데이트가 끝난 후 갱신
-
-**Q3: Concurrent Mode에서 발생할 수 있는 문제는?**
-
-A: Render Phase가 여러 번 실행될 수 있어서:
-- 부수 효과가 있는 코드가 여러 번 실행될 수 있음
-- `useEffect` 대신 render 중 API 호출하면 문제 발생
-- StrictMode에서 의도적으로 두 번 렌더링하는 이유
-
-## 실무 적용 팁
+### useTransition으로 우선순위 분리
 
 ```tsx
-// Bad: 모든 상태 업데이트가 동일한 우선순위
-const handleClick = () => {
-  setSearchQuery(input);  // 긴급
-  setSearchResults(fetch(...));  // 덜 긴급
-};
+function SearchPage() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [isPending, startTransition] = useTransition();
 
-// Good: 우선순위 분리
-const handleClick = () => {
-  setSearchQuery(input);  // 긴급
-  startTransition(() => {
-    setSearchResults(fetch(...));  // 낮은 우선순위
-  });
-};
+  const handleChange = (e) => {
+    // 입력은 즉시 반영 (높은 우선순위)
+    setQuery(e.target.value);
+
+    // 검색 결과는 여유있을 때 (낮은 우선순위)
+    startTransition(() => {
+      setResults(searchItems(e.target.value));
+    });
+  };
+
+  return (
+    <>
+      <input value={query} onChange={handleChange} />
+      {isPending ? <Spinner /> : <ResultList items={results} />}
+    </>
+  );
+}
 ```
 
-흔한 실수:
-- key로 index 사용 → 리스트 변경 시 불필요한 리렌더
-- 불필요한 리렌더 최적화에 집착 → React가 이미 충분히 빠름
+## 비교 분석
+
+| 항목 | Stack Reconciler (v15) | Fiber (v16+) |
+|------|------------------------|--------------|
+| 작업 단위 | 전체 트리 | 개별 Fiber |
+| 중단 가능 | 불가능 | 가능 |
+| 우선순위 | 없음 | Lane 시스템 |
+| 애니메이션 | 버벅임 | 부드러움 |
+| 메모리 | 적음 | 약간 증가 |
+| 복잡도 | 단순 | 복잡 |
+
+## 한계와 주의점
+
+**흔한 실수:**
+
+```tsx
+// Bad: render 중 부수 효과
+function Component() {
+  fetchData(); // Concurrent Mode에서 여러 번 호출될 수 있음
+  return <div>...</div>;
+}
+
+// Good: useEffect 사용
+function Component() {
+  useEffect(() => {
+    fetchData();
+  }, []);
+  return <div>...</div>;
+}
+```
+
+**주의점:**
+- Render Phase는 여러 번 실행될 수 있다
+- 순수하지 않은 렌더링 로직은 버그 유발
+- StrictMode가 두 번 렌더링하는 이유가 이것
+
+## 미래 전망
+
+- **React Compiler (React Forget)**: 자동 메모이제이션으로 수동 최적화 불필요
+- **Server Components**: 서버에서 렌더링하여 번들 사이즈 감소
+- **Offscreen API**: 숨겨진 컴포넌트 사전 렌더링
+
+## 정리
+
+- Fiber는 렌더링을 작은 단위로 쪼개 중단/재개 가능하게 만든 아키텍처
+- Double Buffering과 Lane 시스템으로 우선순위 기반 렌더링
+- useTransition, useDeferredValue로 실무에서 활용
+- Render Phase의 순수성을 지키는 것이 중요
+
+**결론:** Fiber를 이해하면 React의 성능 최적화가 왜 그렇게 동작하는지 본질적으로 이해할 수 있다.
