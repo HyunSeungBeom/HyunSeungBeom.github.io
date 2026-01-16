@@ -1,0 +1,40 @@
+name: Daily CS Post
+
+on:
+  schedule:
+    # 매일 오전 8시 (KST) = UTC 23시 (전날)
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  generate-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install google-generativeai
+
+      - name: Generate CS post
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python scripts/generate_cs_post.py
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add _posts/
+          git diff --staged --quiet || git commit -m "🤖 Daily CS Post: $(date +'%Y-%m-%d')"
+          git push
