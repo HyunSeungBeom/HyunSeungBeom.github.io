@@ -9,68 +9,101 @@ import random
 from datetime import datetime
 import google.generativeai as genai
 
-# CS 주제 목록 (난이도: 쉬움, 중간, 어려움)
-CS_TOPICS = {
-    "easy": [
-        "변수와 자료형",
-        "조건문과 반복문",
-        "배열과 리스트의 차이",
-        "함수란 무엇인가",
-        "객체지향 프로그래밍 기초",
-        "HTTP와 HTTPS의 차이",
-        "쿠키와 세션",
-        "GET과 POST의 차이",
-        "JSON이란",
-        "API란 무엇인가",
-        "Git 기본 명령어",
-        "프론트엔드와 백엔드",
-        "데이터베이스란",
-        "SQL 기본 문법",
-        "클라이언트와 서버",
-    ],
-    "medium": [
-        "TCP와 UDP의 차이",
-        "프로세스와 스레드",
-        "스택과 큐 자료구조",
-        "해시 테이블 원리",
-        "이진 탐색 알고리즘",
-        "시간복잡도 Big-O 표기법",
-        "REST API 설계 원칙",
-        "데이터베이스 인덱스",
-        "정규화와 비정규화",
-        "캐시의 원리",
-        "동기와 비동기 처리",
-        "SOLID 원칙",
-        "디자인 패턴 - 싱글톤",
-        "디자인 패턴 - 팩토리",
-        "OAuth 인증 방식",
-    ],
-    "hard": [
-        "운영체제 스케줄링 알고리즘",
-        "가상 메모리와 페이징",
-        "데드락과 해결 방법",
-        "트랜잭션 격리 수준",
-        "CAP 정리",
-        "분산 시스템의 일관성",
-        "마이크로서비스 아키텍처",
-        "메시지 큐와 이벤트 드리븐",
-        "Docker 컨테이너 원리",
-        "Kubernetes 기본 개념",
-        "CI/CD 파이프라인",
-        "로드 밸런싱 전략",
-        "데이터베이스 샤딩",
-        "동시성 제어와 락",
-        "가비지 컬렉션 원리",
-    ]
-}
+# 프론트엔드 & DevOps 심화 주제 목록
+CS_TOPICS = [
+    # React 심화
+    "React Fiber Architecture와 Reconciliation 알고리즘",
+    "React 동시성 모드 (Concurrent Mode)와 Suspense 내부 동작",
+    "Virtual DOM Diffing 알고리즘과 Key의 중요성",
+    "React Hooks의 내부 구현 원리 (Linked List와 호출 순서)",
+    "React Server Components vs Client Components 아키텍처",
+    "useEffect vs useLayoutEffect 실행 타이밍과 브라우저 렌더링",
+    "React.memo, useMemo, useCallback 최적화 전략과 함정",
+    "React 상태 관리 라이브러리 비교 (Redux, Zustand, Jotai, Recoil)",
+
+    # Next.js 심화
+    "Next.js App Router vs Pages Router 아키텍처 차이",
+    "Next.js SSR, SSG, ISR, PPR 렌더링 전략 비교",
+    "Next.js 서버 액션과 데이터 페칭 패턴",
+    "Next.js 캐싱 전략 (Request Memoization, Data Cache, Full Route Cache)",
+    "Next.js Middleware와 Edge Runtime 활용",
+    "Next.js 이미지 최적화와 Layout Shift 방지",
+
+    # JavaScript/TypeScript 심화
+    "JavaScript 이벤트 루프와 마이크로태스크 큐",
+    "JavaScript 클로저와 메모리 누수 패턴",
+    "JavaScript Prototype Chain과 상속 메커니즘",
+    "JavaScript 엔진 최적화 (V8 Hidden Class, Inline Caching)",
+    "TypeScript 타입 시스템 심화 (Conditional Types, Mapped Types, Template Literal Types)",
+    "TypeScript 컴파일러 동작 원리와 Declaration Files",
+    "WeakMap, WeakSet과 가비지 컬렉션",
+    "JavaScript Module System 비교 (CommonJS, ESM, AMD, UMD)",
+
+    # 브라우저/렌더링
+    "브라우저 렌더링 파이프라인 (DOM, CSSOM, Render Tree, Layout, Paint, Composite)",
+    "Critical Rendering Path 최적화 전략",
+    "Reflow vs Repaint와 성능 최적화",
+    "브라우저 캐싱 전략 (Memory Cache, Disk Cache, Service Worker Cache)",
+    "Web Vitals (LCP, FID, CLS) 최적화 심화",
+    "requestAnimationFrame vs setTimeout 차이와 애니메이션 최적화",
+    "Intersection Observer와 Lazy Loading 구현",
+    "Web Worker와 멀티스레딩 패턴",
+
+    # 번들러/빌드 도구
+    "Webpack vs Vite vs Turbopack 번들링 전략 비교",
+    "Tree Shaking 동작 원리와 Side Effects",
+    "Code Splitting과 Dynamic Import 최적화",
+    "Module Federation과 마이크로 프론트엔드",
+    "Source Map 동작 원리와 디버깅",
+    "Babel vs SWC vs esbuild 트랜스파일러 비교",
+
+    # 성능 최적화
+    "프론트엔드 성능 측정과 Lighthouse 점수 최적화",
+    "이미지 최적화 전략 (WebP, AVIF, Lazy Loading, Responsive Images)",
+    "폰트 최적화와 FOIT, FOUT 해결",
+    "JavaScript 번들 사이즈 최적화 전략",
+    "Prefetch, Preload, Preconnect 리소스 힌트 활용",
+    "메모리 누수 탐지와 Chrome DevTools 프로파일링",
+
+    # DevOps/CI-CD
+    "Docker 컨테이너 원리와 이미지 레이어 최적화",
+    "Kubernetes 아키텍처와 Pod 스케줄링",
+    "GitHub Actions 워크플로우 최적화와 캐싱 전략",
+    "CI/CD 파이프라인 설계 패턴",
+    "Blue-Green vs Canary vs Rolling 배포 전략",
+    "Infrastructure as Code (Terraform, Pulumi)",
+    "모니터링과 Observability (Prometheus, Grafana, Datadog)",
+    "로그 수집과 분석 (ELK Stack, Loki)",
+
+    # 클라우드/인프라
+    "AWS S3 + CloudFront 정적 웹 호스팅 최적화",
+    "Vercel vs Netlify vs AWS Amplify 플랫폼 비교",
+    "Edge Computing과 Edge Functions 활용",
+    "CDN 동작 원리와 캐시 무효화 전략",
+    "서버리스 아키텍처와 Cold Start 최적화",
+    "AWS Lambda@Edge vs CloudFlare Workers",
+
+    # 테스팅
+    "프론트엔드 테스트 전략 (Unit, Integration, E2E)",
+    "Testing Library 철학과 접근성 기반 테스트",
+    "Playwright vs Cypress E2E 테스트 비교",
+    "Visual Regression Testing 구축",
+    "MSW(Mock Service Worker)를 활용한 API Mocking",
+
+    # 보안
+    "프론트엔드 보안 취약점 (XSS, CSRF, Clickjacking)",
+    "Content Security Policy (CSP) 설정과 활용",
+    "CORS 동작 원리와 Preflight Request",
+    "JWT vs Session 인증 방식 비교",
+    "OAuth 2.0 / OpenID Connect 플로우",
+]
 
 def get_random_topic():
-    """난이도를 랜덤으로 선택하고 해당 난이도에서 주제 선택"""
-    difficulty = random.choice(["easy", "medium", "hard"])
-    topic = random.choice(CS_TOPICS[difficulty])
-    return topic, difficulty
+    """랜덤 주제 선택"""
+    topic = random.choice(CS_TOPICS)
+    return topic
 
-def generate_post_content(topic: str, difficulty: str) -> str:
+def generate_post_content(topic: str) -> str:
     """Gemini API를 사용하여 포스트 내용 생성"""
 
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -80,32 +113,51 @@ def generate_post_content(topic: str, difficulty: str) -> str:
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
 
-    difficulty_kr = {"easy": "쉬움", "medium": "중간", "hard": "어려움"}[difficulty]
-
     prompt = f"""
-당신은 친절한 CS 교육자입니다. 다음 주제에 대해 블로그 포스트를 작성해주세요.
+당신은 시니어 프론트엔드 개발자이자 DevOps 전문가입니다. 다음 주제에 대해 심화 기술 블로그 포스트를 작성해주세요.
 
 주제: {topic}
-난이도: {difficulty_kr}
 
-다음 형식으로 작성해주세요:
-1. 핵심 개념을 쉽게 설명 (비유 사용 권장)
-2. 실제 사용 예시나 코드 예제
-3. 면접에서 자주 나오는 질문과 답변
-4. 한 줄 요약
+다음 형식으로 깊이있게 작성해주세요:
+
+## 개요
+- 이 개념이 왜 중요한지
+- 실무에서 어떤 상황에 필요한지
+
+## 핵심 원리
+- 내부 동작 방식을 상세히 설명
+- 필요시 다이어그램을 ASCII art나 표로 표현
+
+## 구현 및 코드 예제
+- 실제 동작하는 코드 예제 (TypeScript/JavaScript/React 등)
+- 각 코드 라인에 대한 설명
+
+## 성능 및 트레이드오프
+- 성능 영향도 분석
+- 장단점 비교
+- 어떤 상황에 어떤 선택을 해야 하는지
+
+## 면접 Deep Dive
+- 시니어 프론트엔드 면접에서 나올 수 있는 심화 질문 3개
+- 각 질문에 대한 모범 답변
+
+## 실무 적용 팁
+- 실제 프로젝트에서 어떻게 활용하는지
+- 흔히 하는 실수와 해결법
 
 작성 규칙:
 - 한국어로 작성
 - 마크다운 형식 사용
-- 코드 블록은 적절한 언어 태그 사용
-- 이모지는 최소한으로 사용
-- 전체 길이는 800~1200자 정도
+- 코드 블록은 적절한 언어 태그 사용 (typescript, javascript, tsx, bash 등)
+- 이모지 사용하지 않음
+- 전체 길이는 1500~2500자 정도로 깊이있게
+- 단순한 설명이 아닌 "왜?"에 초점
 """
 
     response = model.generate_content(prompt)
     return response.text
 
-def create_post_file(topic: str, difficulty: str, content: str):
+def create_post_file(topic: str, content: str):
     """마크다운 포스트 파일 생성"""
 
     today = datetime.now()
@@ -113,16 +165,16 @@ def create_post_file(topic: str, difficulty: str, content: str):
     time_str = today.strftime("%Y-%m-%d %H:%M:%S +0900")
 
     # 파일명용 슬러그 생성
-    slug = topic.replace(" ", "-").replace("/", "-").lower()
+    slug = topic.replace(" ", "-").replace("/", "-").replace("(", "").replace(")", "").replace(",", "").lower()
+    # 슬러그 길이 제한
+    slug = slug[:50]
     filename = f"{date_str}-{slug}.md"
 
-    difficulty_tag = {"easy": "기초", "medium": "중급", "hard": "심화"}[difficulty]
-
     front_matter = f"""---
-title: "[CS 지식] {topic}"
+title: "[Deep Dive] {topic}"
 date: {time_str}
 categories: [개발뉴스]
-tags: [CS, {difficulty_tag}]
+tags: [CS, 심화, 면접]
 ---
 
 """
@@ -142,17 +194,17 @@ tags: [CS, {difficulty_tag}]
     return filename
 
 def main():
-    print("CS 지식 포스트 생성 시작...")
+    print("CS Deep Dive 포스트 생성 시작...")
 
     # 랜덤 주제 선택
-    topic, difficulty = get_random_topic()
-    print(f"선택된 주제: {topic} (난이도: {difficulty})")
+    topic = get_random_topic()
+    print(f"선택된 주제: {topic}")
 
     # Gemini로 내용 생성
-    content = generate_post_content(topic, difficulty)
+    content = generate_post_content(topic)
 
     # 파일 생성
-    filename = create_post_file(topic, difficulty, content)
+    filename = create_post_file(topic, content)
 
     print("완료!")
     return filename
