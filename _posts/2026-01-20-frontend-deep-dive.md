@@ -1,6 +1,11 @@
-# Frontend Interview Deep Dive
+---
+title: "Frontend Deep Dive 정리"
+date: 2026-01-20 12:00:00 +0900
+categories: [개발노트]
+tags: [JavaScript, React, TypeScript, 성능최적화]
+---
 
-> 표면적인 답변을 넘어 "왜?"를 설명할 수 있어야 한다.
+> 표면적인 이해를 넘어 "왜?"를 설명할 수 있어야 한다.
 
 ---
 
@@ -154,10 +159,10 @@ Content-Type: application/json
 
 **보안 관점:**
 ```
-❌ GET은 민감 정보에 부적합
+GET은 민감 정보에 부적합
 GET /login?username=admin&password=1234  → URL에 노출, 로그에 기록
 
-✅ POST도 HTTPS 없이는 안전하지 않음
+POST도 HTTPS 없이는 안전하지 않음
 Body도 평문 전송됨 → 반드시 HTTPS 사용
 ```
 
@@ -363,7 +368,7 @@ const obj = {
 
 **화살표 함수 주의점:**
 ```javascript
-// ❌ 메서드로 사용하면 안됨
+// 메서드로 사용하면 안됨
 const obj = {
   name: 'Kim',
   greet: () => {
@@ -371,13 +376,13 @@ const obj = {
   }
 };
 
-// ❌ 생성자로 사용 불가
+// 생성자로 사용 불가
 const Person = (name) => {
   this.name = name;
 };
 new Person('Kim'); // TypeError
 
-// ❌ addEventListener에서 주의
+// addEventListener에서 주의
 button.addEventListener('click', () => {
   console.log(this); // window (의도: button)
 });
@@ -492,48 +497,6 @@ function example() {
 }
 ```
 
-#### 복잡한 예제
-
-```javascript
-async function async1() {
-  console.log('async1 start');
-  await async2();
-  console.log('async1 end');
-}
-
-async function async2() {
-  console.log('async2');
-}
-
-console.log('script start');
-
-setTimeout(() => {
-  console.log('setTimeout');
-}, 0);
-
-async1();
-
-new Promise((resolve) => {
-  console.log('promise1');
-  resolve();
-}).then(() => {
-  console.log('promise2');
-});
-
-console.log('script end');
-
-/* 출력:
-script start
-async1 start
-async2
-promise1
-script end
-async1 end
-promise2
-setTimeout
-*/
-```
-
 ---
 
 ## 6. React 렌더링 최적화
@@ -592,10 +555,10 @@ const Child = React.memo(({ value, onClick }) => {
 function Parent() {
   const [count, setCount] = useState(0);
 
-  // ❌ 매 렌더링마다 새 함수 생성 → Child 리렌더링
+  // 매 렌더링마다 새 함수 생성 → Child 리렌더링
   const handleClick = () => console.log('clicked');
 
-  // ✅ useCallback으로 함수 메모이제이션
+  // useCallback으로 함수 메모이제이션
   const handleClick = useCallback(() => {
     console.log('clicked');
   }, []);
@@ -624,72 +587,6 @@ const memoizedFn = useMemo(() => {
 
 // React.memo: 컴포넌트를 메모이제이션
 const MemoizedComponent = React.memo(Component);
-```
-
-#### 언제 최적화해야 하는가?
-
-```javascript
-// ❌ 과도한 최적화 (premature optimization)
-const Component = () => {
-  // 간단한 계산에 useMemo는 오히려 오버헤드
-  const doubled = useMemo(() => count * 2, [count]);
-
-  // 단순 함수에 useCallback도 불필요
-  const handleClick = useCallback(() => setCount(c => c + 1), []);
-
-  return <button onClick={handleClick}>{doubled}</button>;
-};
-
-// ✅ 적절한 최적화
-const Component = () => {
-  // 1. 비용이 큰 계산
-  const sortedList = useMemo(() => {
-    return [...hugeList].sort((a, b) => a.value - b.value);
-  }, [hugeList]);
-
-  // 2. 참조 동등성이 중요한 경우 (자식 컴포넌트에 전달)
-  const handleSubmit = useCallback((data) => {
-    api.submit(data);
-  }, []);
-
-  // 3. 비용 큰 컴포넌트
-  return <ExpensiveChild data={sortedList} onSubmit={handleSubmit} />;
-};
-```
-
-#### 상태 끌어올리기 vs 내리기
-
-```javascript
-// ❌ 상태가 너무 위에 있으면 전체 리렌더링
-function App() {
-  const [inputValue, setInputValue] = useState('');
-
-  return (
-    <div>
-      <Header />                           {/* 불필요한 리렌더링 */}
-      <Sidebar />                          {/* 불필요한 리렌더링 */}
-      <Input value={inputValue} onChange={setInputValue} />
-      <ExpensiveList />                    {/* 불필요한 리렌더링 */}
-    </div>
-  );
-}
-
-// ✅ 상태를 필요한 곳으로 내리기
-function App() {
-  return (
-    <div>
-      <Header />
-      <Sidebar />
-      <SearchInput />                      {/* 상태를 여기로 */}
-      <ExpensiveList />
-    </div>
-  );
-}
-
-function SearchInput() {
-  const [inputValue, setInputValue] = useState('');
-  return <Input value={inputValue} onChange={setInputValue} />;
-}
 ```
 
 ---
@@ -757,42 +654,23 @@ const element = {
 #### Key의 중요성
 
 ```javascript
-// ❌ key 없이 리스트 렌더링
+// key 없이 리스트 렌더링
 <ul>
   {items.map(item => <li>{item.name}</li>)}
 </ul>
 // 맨 앞에 아이템 추가 시 → 모든 li 업데이트
 
-// ❌ index를 key로 사용
+// index를 key로 사용
 <ul>
   {items.map((item, index) => <li key={index}>{item.name}</li>)}
 </ul>
 // 순서 변경 시 → 잘못된 컴포넌트 매칭, 상태 꼬임
 
-// ✅ 고유 ID를 key로 사용
+// 고유 ID를 key로 사용
 <ul>
   {items.map(item => <li key={item.id}>{item.name}</li>)}
 </ul>
 // 정확한 매칭 → 최소한의 DOM 조작
-```
-
-**Key가 잘못되면 발생하는 문제:**
-```javascript
-function Item({ name }) {
-  const [checked, setChecked] = useState(false);
-  return (
-    <label>
-      <input type="checkbox" checked={checked} onChange={() => setChecked(!checked)} />
-      {name}
-    </label>
-  );
-}
-
-// items = ['A', 'B', 'C']에서 'A' 체크 후
-// items = ['B', 'C']로 변경하면?
-
-// key={index} 사용 시: 'B'가 체크된 상태로 보임 (잘못된 동작)
-// key={item} 사용 시: 체크된 항목 없음 (올바른 동작)
 ```
 
 ---
@@ -845,40 +723,6 @@ function NoFlickerComponent() {
 }
 ```
 
-#### 사용 케이스
-
-```javascript
-// useEffect: 대부분의 사이드 이펙트
-useEffect(() => {
-  // API 호출
-  fetchData();
-
-  // 이벤트 리스너
-  window.addEventListener('resize', handler);
-
-  // 구독
-  const subscription = observable.subscribe();
-
-  return () => {
-    window.removeEventListener('resize', handler);
-    subscription.unsubscribe();
-  };
-}, []);
-
-// useLayoutEffect: DOM 측정 및 동기적 업데이트
-useLayoutEffect(() => {
-  // DOM 크기 측정
-  const rect = ref.current.getBoundingClientRect();
-  setSize({ width: rect.width, height: rect.height });
-
-  // 툴팁 위치 계산
-  const tooltipRect = tooltipRef.current.getBoundingClientRect();
-  if (tooltipRect.right > window.innerWidth) {
-    setPosition('left');
-  }
-}, []);
-```
-
 ---
 
 ## 9. 깊은 복사 vs 얕은 복사
@@ -915,29 +759,6 @@ Stack                     Heap
 └─────────────┘          └─────────────────┘
 ```
 
-#### 얕은 복사 (Shallow Copy)
-
-```javascript
-const original = {
-  name: 'Kim',
-  address: { city: 'Seoul' }
-};
-
-// 방법 1: Spread
-const copy1 = { ...original };
-
-// 방법 2: Object.assign
-const copy2 = Object.assign({}, original);
-
-// 방법 3: Array.from, slice (배열)
-const arr = [1, 2, 3];
-const arrCopy = [...arr];
-
-// 얕은 복사의 한계
-copy1.name = 'Lee';           // original 영향 없음
-copy1.address.city = 'Busan'; // original.address.city도 'Busan' ⚠️
-```
-
 #### 깊은 복사 (Deep Copy)
 
 ```javascript
@@ -949,58 +770,15 @@ const original = {
 
 // 방법 1: JSON (한계 있음)
 const copy1 = JSON.parse(JSON.stringify(original));
-// ❌ 함수, undefined, Symbol, 순환 참조 처리 못함
-// ❌ Date → 문자열, Map/Set → {}
+// 함수, undefined, Symbol, 순환 참조 처리 못함
 
 // 방법 2: structuredClone (Modern)
 const copy2 = structuredClone(original);
-// ✅ Date, Map, Set, ArrayBuffer 등 지원
-// ❌ 함수, Symbol, DOM 노드 처리 못함
+// Date, Map, Set, ArrayBuffer 등 지원
 
-// 방법 3: 재귀 구현
-function deepClone(obj) {
-  if (obj === null || typeof obj !== 'object') return obj;
-  if (obj instanceof Date) return new Date(obj);
-  if (obj instanceof Array) return obj.map(item => deepClone(item));
-
-  const cloned = {};
-  for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      cloned[key] = deepClone(obj[key]);
-    }
-  }
-  return cloned;
-}
-
-// 방법 4: Lodash
+// 방법 3: Lodash
 import { cloneDeep } from 'lodash';
-const copy4 = cloneDeep(original);
-```
-
-#### 불변성 유지 패턴 (React)
-
-```javascript
-// ❌ 직접 수정
-state.user.address.city = 'Busan';
-
-// ✅ 불변성 유지
-setState(prev => ({
-  ...prev,
-  user: {
-    ...prev.user,
-    address: {
-      ...prev.user.address,
-      city: 'Busan'
-    }
-  }
-}));
-
-// ✅ Immer 사용
-import { produce } from 'immer';
-
-setState(produce(draft => {
-  draft.user.address.city = 'Busan';
-}));
+const copy3 = cloneDeep(original);
 ```
 
 ---
@@ -1032,266 +810,25 @@ setState(produce(draft => {
             └───────────────────────────┘
 ```
 
-#### 이벤트 흐름 제어
-
-```javascript
-// 기본: 버블링 단계에서 실행
-element.addEventListener('click', handler);  // bubbling (기본)
-
-// 캡처링 단계에서 실행
-element.addEventListener('click', handler, true);
-element.addEventListener('click', handler, { capture: true });
-
-// 전파 중단
-event.stopPropagation();        // 다음 요소로 전파 중단
-event.stopImmediatePropagation(); // 같은 요소의 다른 핸들러도 중단
-
-// 기본 동작 취소 (전파와 무관)
-event.preventDefault();  // a 태그 이동, form 제출 등 취소
-```
-
 #### 이벤트 위임 (Event Delegation)
 
 ```javascript
-// ❌ 각 요소에 이벤트 리스너
+// 각 요소에 이벤트 리스너 (비효율)
 document.querySelectorAll('li').forEach(li => {
   li.addEventListener('click', handleClick);
 });
-// 문제: 새로 추가된 li에는 이벤트 없음, 메모리 낭비
 
-// ✅ 이벤트 위임
+// 이벤트 위임 (효율적)
 document.querySelector('ul').addEventListener('click', (e) => {
-  if (e.target.tagName === 'LI') {
-    handleClick(e);
-  }
-});
-// 장점: 하나의 리스너, 동적 요소 자동 처리
-
-// closest를 활용한 더 나은 패턴
-ul.addEventListener('click', (e) => {
   const li = e.target.closest('li');
   if (!li) return;
-  if (!ul.contains(li)) return;  // ul 외부 요소 제외
   handleClick(li);
 });
 ```
 
-#### React의 이벤트 시스템
-
-```javascript
-// React는 이벤트 위임을 내부적으로 사용
-// React 17+: root 컨테이너에 이벤트 위임
-// React 16: document에 이벤트 위임
-
-function Component() {
-  // SyntheticEvent: 브라우저 네이티브 이벤트의 래퍼
-  const handleClick = (e: React.MouseEvent) => {
-    e.nativeEvent;  // 네이티브 이벤트 접근
-    e.persist();    // React 16에서 이벤트 풀링 방지 (17+에서 불필요)
-  };
-
-  return <button onClick={handleClick}>Click</button>;
-}
-```
-
 ---
 
-## 11. 프로세스 vs 스레드
-
-### 표면적 답변
-프로세스는 메모리에서 실행 중인 프로그램, 스레드는 프로세스 내 실행 단위
-
-### Deep Dive
-
-#### 메모리 구조
-
-```
-Process A                          Process B
-┌────────────────────┐            ┌────────────────────┐
-│ Code (Text)        │            │ Code (Text)        │
-├────────────────────┤            ├────────────────────┤
-│ Data (전역변수)     │            │ Data (전역변수)     │
-├────────────────────┤            ├────────────────────┤
-│ Heap (동적할당)     │            │ Heap (동적할당)     │
-├────────────────────┤            ├────────────────────┤
-│ Stack (Thread 1)   │            │ Stack              │
-│ Stack (Thread 2)   │            │                    │
-│ Stack (Thread 3)   │            │                    │
-└────────────────────┘            └────────────────────┘
-     완전 분리됨                        완전 분리됨
-
-Thread들은 Code, Data, Heap 공유 / Stack만 분리
-```
-
-#### 브라우저의 멀티 프로세스 아키텍처
-
-```
-Chrome 아키텍처:
-┌─────────────────────────────────────────────────────────┐
-│                    Browser Process                       │
-│  (UI, 네트워크, 스토리지, 탭 관리)                        │
-└─────────────────────────────────────────────────────────┘
-         │              │              │
-         ↓              ↓              ↓
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│ Renderer    │  │ Renderer    │  │ GPU Process │
-│ Process     │  │ Process     │  │             │
-│ (탭 1)      │  │ (탭 2)      │  │             │
-└─────────────┘  └─────────────┘  └─────────────┘
-
-Renderer Process 내부:
-┌─────────────────────────────────────────────────────────┐
-│  Main Thread (JS 실행, DOM, 스타일 계산, 레이아웃)       │
-├─────────────────────────────────────────────────────────┤
-│  Worker Threads (Web Workers)                            │
-├─────────────────────────────────────────────────────────┤
-│  Compositor Thread (스크롤, 애니메이션)                  │
-├─────────────────────────────────────────────────────────┤
-│  Raster Threads (페인팅)                                 │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### JavaScript는 싱글 스레드?
-
-```javascript
-// Main Thread에서 JS 실행 (싱글 스레드)
-// 하지만 Web Workers로 멀티 스레드 가능
-
-// main.js
-const worker = new Worker('worker.js');
-
-worker.postMessage({ data: hugeArray });
-
-worker.onmessage = (e) => {
-  console.log('Result:', e.data);
-};
-
-// worker.js
-self.onmessage = (e) => {
-  const result = heavyComputation(e.data);
-  self.postMessage(result);
-};
-
-// Worker 제한사항:
-// - DOM 접근 불가
-// - window 객체 불가
-// - 메인 스레드와 메시지로만 통신
-```
-
----
-
-## 12. Context API & 전역 상태 관리
-
-### 표면적 답변
-Context는 전역 상태를 공유하는 기능
-
-### Deep Dive
-
-#### Context의 리렌더링 문제
-
-```javascript
-// ❌ 모든 Consumer가 리렌더링
-const AppContext = createContext();
-
-function AppProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [theme, setTheme] = useState('light');
-
-  // 객체가 매번 새로 생성됨 → 모든 Consumer 리렌더링
-  return (
-    <AppContext.Provider value={{ user, setUser, theme, setTheme }}>
-      {children}
-    </AppContext.Provider>
-  );
-}
-
-// user만 사용하는 컴포넌트도 theme 변경 시 리렌더링!
-function UserProfile() {
-  const { user } = useContext(AppContext);
-  return <div>{user.name}</div>;
-}
-```
-
-#### 해결 방법
-
-```javascript
-// 1. Context 분리
-const UserContext = createContext();
-const ThemeContext = createContext();
-
-function AppProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [theme, setTheme] = useState('light');
-
-  return (
-    <UserContext.Provider value={{ user, setUser }}>
-      <ThemeContext.Provider value={{ theme, setTheme }}>
-        {children}
-      </ThemeContext.Provider>
-    </UserContext.Provider>
-  );
-}
-
-// 2. 값 메모이제이션
-function AppProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [theme, setTheme] = useState('light');
-
-  const userValue = useMemo(() => ({ user, setUser }), [user]);
-  const themeValue = useMemo(() => ({ theme, setTheme }), [theme]);
-
-  return (
-    <UserContext.Provider value={userValue}>
-      <ThemeContext.Provider value={themeValue}>
-        {children}
-      </ThemeContext.Provider>
-    </UserContext.Provider>
-  );
-}
-
-// 3. 상태와 디스패치 분리
-const UserStateContext = createContext();
-const UserDispatchContext = createContext();
-
-function UserProvider({ children }) {
-  const [user, setUser] = useState(null);
-
-  return (
-    <UserStateContext.Provider value={user}>
-      <UserDispatchContext.Provider value={setUser}>
-        {children}
-      </UserDispatchContext.Provider>
-    </UserStateContext.Provider>
-  );
-}
-
-// 읽기만 하는 컴포넌트
-function UserDisplay() {
-  const user = useContext(UserStateContext);
-  return <div>{user.name}</div>;
-}
-
-// 쓰기만 하는 컴포넌트 (user 변경에 리렌더링 안됨)
-function UserEditor() {
-  const setUser = useContext(UserDispatchContext);
-  return <button onClick={() => setUser(newUser)}>Update</button>;
-}
-```
-
-#### Context vs 전역 상태 라이브러리
-
-| 특성 | Context | Zustand | Redux |
-|-----|---------|---------|-------|
-| 보일러플레이트 | 적음 | 매우 적음 | 많음 |
-| 리렌더링 최적화 | 직접 구현 | 자동 | 자동 |
-| 디버깅 도구 | 없음 | 있음 | 강력함 |
-| 미들웨어 | 없음 | 있음 | 강력함 |
-| 번들 크기 | 0 | ~1KB | ~7KB |
-| 사용 케이스 | 테마, 인증 | 중소규모 | 대규모 |
-
----
-
-## 13. TypeScript 타입 시스템
+## 11. TypeScript 타입 시스템
 
 ### 표면적 답변
 타입을 명시해서 안전하게 코딩
@@ -1307,10 +844,6 @@ interface Point {
   y: number;
 }
 
-interface Named {
-  name: string;
-}
-
 // Point를 요구하는 곳에 더 많은 속성을 가진 객체도 OK
 function logPoint(p: Point) {
   console.log(`${p.x}, ${p.y}`);
@@ -1323,56 +856,6 @@ logPoint(point3D); // OK!
 logPoint({ x: 1, y: 2, z: 3 }); // Error!
 ```
 
-#### 타입 좁히기 (Type Narrowing)
-
-```typescript
-function process(value: string | number | null) {
-  // typeof 가드
-  if (typeof value === 'string') {
-    return value.toUpperCase();  // string
-  }
-
-  // truthiness 가드
-  if (!value) {
-    return 0;  // null
-  }
-
-  return value * 2;  // number
-}
-
-// in 연산자
-interface Fish { swim: () => void }
-interface Bird { fly: () => void }
-
-function move(animal: Fish | Bird) {
-  if ('swim' in animal) {
-    animal.swim();  // Fish
-  } else {
-    animal.fly();   // Bird
-  }
-}
-
-// 사용자 정의 타입 가드
-function isFish(animal: Fish | Bird): animal is Fish {
-  return 'swim' in animal;
-}
-
-// discriminated union
-type Action =
-  | { type: 'INCREMENT'; payload: number }
-  | { type: 'DECREMENT'; payload: number }
-  | { type: 'RESET' };
-
-function reducer(state: number, action: Action) {
-  switch (action.type) {
-    case 'INCREMENT':
-      return state + action.payload;  // payload 접근 가능
-    case 'RESET':
-      return 0;  // payload 없음
-  }
-}
-```
-
 #### 고급 타입 패턴
 
 ```typescript
@@ -1380,34 +863,19 @@ function reducer(state: number, action: Action) {
 type EventName = `on${Capitalize<'click' | 'focus' | 'blur'>}`;
 // 'onClick' | 'onFocus' | 'onBlur'
 
-// 2. Mapped Types + Key Remapping
-type Getters<T> = {
-  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K]
-};
-
-interface Person { name: string; age: number; }
-type PersonGetters = Getters<Person>;
-// { getName: () => string; getAge: () => number }
-
-// 3. Conditional Types + infer
+// 2. Conditional Types + infer
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 type Result = UnwrapPromise<Promise<string>>; // string
 
-// 4. Recursive Types
-type DeepReadonly<T> = {
-  readonly [K in keyof T]: T[K] extends object
-    ? DeepReadonly<T[K]>
-    : T[K]
+// 3. Mapped Types
+type Getters<T> = {
+  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K]
 };
-
-// 5. Variadic Tuple Types
-type Concat<T extends unknown[], U extends unknown[]> = [...T, ...U];
-type Result = Concat<[1, 2], [3, 4]>; // [1, 2, 3, 4]
 ```
 
 ---
 
-## 14. 웹 성능 최적화
+## 12. 웹 성능 최적화
 
 ### Core Web Vitals
 
@@ -1431,43 +899,7 @@ CLS (Cumulative Layout Shift): 0.1 이하
 // 1. 코드 분할
 const HeavyComponent = lazy(() => import('./HeavyComponent'));
 
-function App() {
-  return (
-    <Suspense fallback={<Loading />}>
-      <HeavyComponent />
-    </Suspense>
-  );
-}
-
-// 2. 이미지 최적화
-<Image
-  src="/hero.jpg"
-  alt="Hero"
-  width={1200}
-  height={600}
-  priority              // LCP 이미지
-  placeholder="blur"    // 로딩 중 blur 처리
-/>
-
-// 3. 가상화 (대용량 리스트)
-import { FixedSizeList } from 'react-window';
-
-function VirtualList({ items }) {
-  return (
-    <FixedSizeList
-      height={400}
-      itemCount={items.length}
-      itemSize={35}
-    >
-      {({ index, style }) => (
-        <div style={style}>{items[index]}</div>
-      )}
-    </FixedSizeList>
-  );
-}
-
-// 4. 디바운스 & 쓰로틀
-// 디바운스: 마지막 호출 후 일정 시간 후 실행
+// 2. 디바운스 & 쓰로틀
 function debounce(fn, delay) {
   let timeoutId;
   return (...args) => {
@@ -1476,34 +908,6 @@ function debounce(fn, delay) {
   };
 }
 
-// 쓰로틀: 일정 간격으로 최대 1번 실행
-function throttle(fn, limit) {
-  let inThrottle;
-  return (...args) => {
-    if (!inThrottle) {
-      fn(...args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  };
-}
+// 3. 가상화 (대용량 리스트)
+import { FixedSizeList } from 'react-window';
 ```
-
----
-
-## 마무리 팁
-
-### 면접에서 차별화되는 답변 방법
-
-1. **"왜?"를 설명하라**
-   - X: "useMemo는 값을 메모이제이션합니다"
-   - O: "useMemo는 참조 동등성을 유지해서 React.memo로 감싼 자식 컴포넌트의 불필요한 리렌더링을 방지합니다"
-
-2. **트레이드오프를 언급하라**
-   - "Context는 보일러플레이트가 적지만, 구독 기반이 아니라 Provider value 변경 시 모든 Consumer가 리렌더링되는 단점이 있습니다"
-
-3. **실제 경험을 연결하라**
-   - "실제로 프로젝트에서 Context의 리렌더링 문제를 겪어서, 상태와 디스패치를 분리하는 패턴을 적용했습니다"
-
-4. **대안을 제시하라**
-   - "이 문제는 A 방식으로 해결할 수 있지만, B 방식이 더 적합한 경우도 있습니다. 예를 들어..."
