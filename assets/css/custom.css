@@ -1,0 +1,36 @@
+/* 검색 창 커스텀 스타일 */
+
+/* Top bar 상단 여백 */
+#topbar-wrapper {
+  margin-top: 15px !important;
+}
+
+#topbar {
+  margin-top: 10px !important;
+}
+
+/* 검색 입력창 너비 확장 */
+#search-input {
+  min-width: 280px !important;
+  width: 100% !important;
+  max-width: 400px !important;
+  font-size: 1.1rem !important;
+  padding: 0.6rem 1rem !important;
+}
+
+/* 검색 컨테이너 확장 */
+#search {
+  min-width: 300px !important;
+}
+
+/* 데스크톱에서 더 넓게 */
+@media (min-width: 992px) {
+  #search-input {
+    min-width: 350px !important;
+    max-width: 500px !important;
+  }
+
+  #search {
+    min-width: 380px !important;
+  }
+}
