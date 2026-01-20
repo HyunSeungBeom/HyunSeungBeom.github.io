@@ -699,6 +699,7 @@ useEffect는 비동기, useLayoutEffect는 동기
 
 #### 시각적 차이
 
+{% raw %}
 ```javascript
 // useEffect: 깜빡임 발생 가능
 function FlickerComponent() {
@@ -722,6 +723,7 @@ function NoFlickerComponent() {
   return <div style={{ width: `${width}px` }} />;
 }
 ```
+{% endraw %}
 
 ---
 
