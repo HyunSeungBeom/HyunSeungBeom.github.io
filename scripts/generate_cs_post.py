@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 매일 CS 지식 포스트를 자동 생성하는 스크립트
-Gemini API를 사용하여 랜덤 CS 주제에 대한 글을 생성합니다.
+Groq API를 사용하여 랜덤 CS 주제에 대한 글을 생성합니다.
 """
 
 import os
 import random
 from datetime import datetime
-from google import genai
+from groq import Groq
 
 # 프론트엔드 & DevOps 심화 주제 목록
 CS_TOPICS = [
@@ -104,13 +104,13 @@ def get_random_topic():
     return topic
 
 def generate_post_content(topic: str) -> str:
-    """Gemini API를 사용하여 포스트 내용 생성"""
+    """Groq API를 사용하여 포스트 내용 생성"""
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았습니다.")
+        raise ValueError("GROQ_API_KEY 환경변수가 설정되지 않았습니다.")
 
-    client = genai.Client(api_key=api_key)
+    client = Groq(api_key=api_key)
 
     prompt = f"""
 당신은 시니어 프론트엔드 개발자이자 DevOps 전문가입니다. 다음 주제에 대해 심화 기술 블로그 포스트를 작성해주세요.
@@ -178,11 +178,17 @@ def generate_post_content(topic: str) -> str:
 - 면접 관련 내용은 포함하지 않음
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model="llama-3.3-70b-versatile",
     )
-    return response.text
+
+    return chat_completion.choices[0].message.content
 
 def create_post_file(topic: str, content: str):
     """마크다운 포스트 파일 생성"""
@@ -227,7 +233,7 @@ def main():
     topic = get_random_topic()
     print(f"선택된 주제: {topic}")
 
-    # Gemini로 내용 생성
+    # Groq로 내용 생성
     content = generate_post_content(topic)
 
     # 파일 생성
