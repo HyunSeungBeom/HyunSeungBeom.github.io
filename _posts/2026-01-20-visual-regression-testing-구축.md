@@ -90,4 +90,4 @@ if (result.misMatchPercentage > 0.1) {
 - 시각적 버그가 발생했을 때, 자동으로 이전 버전의 코드로 롤백한다.
 
 ### 한 줄 정리
-Visual Regression Testing은 사용자 인터페이스의 시각적 버그를 자동으로 검출하여, 개발자의 시간을節約하고 품질을 향상시킨다.
+Visual Regression Testing은 사용자 인터페이스의 시각적 버그를 자동으로 검출하여, 개발자의 시간을 절약하고 품질을 향상시킨다.
