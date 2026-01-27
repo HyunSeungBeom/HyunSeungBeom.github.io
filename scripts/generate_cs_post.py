@@ -5,6 +5,7 @@ Groq API를 사용하여 랜덤 CS 주제에 대한 글을 생성합니다.
 """
 
 import os
+import re
 import random
 from datetime import datetime
 from groq import Groq
@@ -98,9 +99,51 @@ CS_TOPICS = [
     "OAuth 2.0 / OpenID Connect 플로우",
 ]
 
+def get_used_topics():
+    """기존 게시물에서 이미 사용된 주제들을 추출"""
+    posts_dir = os.path.join(os.path.dirname(__file__), "..", "_posts")
+    used_topics = set()
+
+    if not os.path.exists(posts_dir):
+        return used_topics
+
+    for filename in os.listdir(posts_dir):
+        if not filename.endswith('.md'):
+            continue
+
+        filepath = os.path.join(posts_dir, filename)
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read(500)  # front matter만 읽으면 됨
+
+            # title에서 주제 추출: title: "[Deep Dive] 주제"
+            match = re.search(r'title:\s*"\[Deep Dive\]\s*(.+?)"', content)
+            if match:
+                topic = match.group(1).strip()
+                used_topics.add(topic.lower())
+        except Exception:
+            continue
+
+    return used_topics
+
+
 def get_random_topic():
-    """랜덤 주제 선택"""
-    topic = random.choice(CS_TOPICS)
+    """중복되지 않은 랜덤 주제 선택"""
+    used_topics = get_used_topics()
+
+    # 아직 사용하지 않은 주제 필터링
+    available_topics = [
+        topic for topic in CS_TOPICS
+        if topic.lower() not in used_topics
+    ]
+
+    # 모든 주제를 다 사용했으면 전체 목록에서 선택 (리셋)
+    if not available_topics:
+        print("모든 주제를 사용했습니다. 주제 목록을 리셋합니다.")
+        available_topics = CS_TOPICS
+
+    topic = random.choice(available_topics)
+    print(f"사용 가능한 주제: {len(available_topics)}개 남음")
     return topic
 
 def generate_post_content(topic: str) -> str:
@@ -112,14 +155,20 @@ def generate_post_content(topic: str) -> str:
 
     client = Groq(api_key=api_key)
 
-    prompt = f"""
-당신은 시니어 프론트엔드 개발자이자 DevOps 전문가입니다. 다음 주제에 대해 Deep Dive 기술 블로그 포스트를 작성해주세요.
+    system_message = """당신은 한국어 기술 블로그 작성 전문가입니다.
+
+중요한 규칙:
+1. 반드시 한국어로만 작성하세요.
+2. 중국어(汉字/漢字) 사용 절대 금지입니다. 예: 更新, 実行, 通过 등의 한자어를 쓰지 마세요.
+3. 일본어 사용 금지입니다.
+4. 영어 문장 금지입니다 (기술 용어는 영어 사용 가능).
+5. 한글과 영어 기술 용어만 사용하세요."""
+
+    prompt = f"""다음 주제에 대해 Deep Dive 기술 블로그 포스트를 작성해주세요.
 
 주제: {topic}
 
 다음 형식으로 작성해주세요:
-
----
 
 ## 표면적 이해
 (한 줄로 간단히 설명)
@@ -145,8 +194,8 @@ def generate_post_content(topic: str) -> str:
 ```
 
 ```typescript
-// 잘못된 사용 예 (❌)
-// 올바른 사용 예 (✅)
+// 잘못된 사용 예
+// 올바른 사용 예
 ```
 
 ### 비교 분석
@@ -166,8 +215,8 @@ def generate_post_content(topic: str) -> str:
 
 ---
 
-작성 규칙:
-- 반드시 한국어로만 작성 (중국어, 일본어, 영어 문장 절대 금지)
+작성 시 주의사항:
+- 한국어로만 작성 (중국어 한자 절대 금지: 更新, 通过, 実行 등 사용 금지)
 - 기술 용어는 영어 그대로 사용 가능 (예: Virtual DOM, Reconciliation)
 - 마크다운 형식 사용
 - 코드 블록은 적절한 언어 태그 사용 (typescript, javascript, tsx, bash 등)
@@ -181,6 +230,10 @@ def generate_post_content(topic: str) -> str:
 
     chat_completion = client.chat.completions.create(
         messages=[
+            {
+                "role": "system",
+                "content": system_message,
+            },
             {
                 "role": "user",
                 "content": prompt,
