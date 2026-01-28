@@ -99,6 +99,50 @@ CS_TOPICS = [
     "OAuth 2.0 / OpenID Connect 플로우",
 ]
 
+def sanitize_foreign_characters(content: str) -> str:
+    """외국어 문자(중국어, 일본어, 힌디어 등)를 감지하고 제거"""
+
+    # 허용: 한글, 영어, 숫자, 기본 문장부호, 마크다운 문법
+    # 제거: 중국어(한자), 일본어(히라가나, 가타카나), 힌디어, 아랍어 등
+
+    foreign_patterns = {
+        # 중국어 한자 (가장 흔함)
+        '更新': '업데이트',
+        '通过': '통해',
+        '完後': '완료 후',
+        '節約': '절약',
+        '解决': '해결',
+        '同步': '동기',
+        '难度': '난이도',
+        '執行': '실행',
+        '実行': '실행',
+        # 일본어
+        'ンダ': '다',
+        'レン': '렌',
+    }
+
+    # 알려진 패턴 치환
+    for foreign, korean in foreign_patterns.items():
+        content = content.replace(foreign, korean)
+
+    # 남은 외국어 문자 제거 (유니코드 범위 기반)
+    result = []
+    for char in content:
+        code = ord(char)
+        # 허용 범위: ASCII, 한글, 한글 자모, 기본 문장부호
+        if (code < 0x80 or  # ASCII
+            (0xAC00 <= code <= 0xD7AF) or  # 한글 음절
+            (0x1100 <= code <= 0x11FF) or  # 한글 자모
+            (0x3130 <= code <= 0x318F) or  # 한글 호환 자모
+            (0x2000 <= code <= 0x206F) or  # 일반 문장부호
+            (0x2010 <= code <= 0x2027) or  # 문장부호
+            char in '─│┌┐└┘├┤┬┴┼━┃┏┓┗┛┣┫┳┻╋+|-=*#@!?.,;:\'"()[]{}/<>\\`~^&%$_\n\t '):
+            result.append(char)
+        # 외국어 문자는 건너뜀 (자동 제거)
+
+    return ''.join(result)
+
+
 def get_used_topics():
     """기존 게시물에서 이미 사용된 주제들을 추출"""
     posts_dir = os.path.join(os.path.dirname(__file__), "..", "_posts")
@@ -291,6 +335,10 @@ def main():
 
     # Groq로 내용 생성
     content = generate_post_content(topic)
+
+    # 외국어 문자 필터링 (중국어, 일본어, 힌디어 등 제거)
+    content = sanitize_foreign_characters(content)
+    print("외국어 문자 필터링 완료")
 
     # 파일 생성
     filename = create_post_file(topic, content)
