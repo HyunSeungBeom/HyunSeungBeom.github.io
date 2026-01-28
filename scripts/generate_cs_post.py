@@ -7,7 +7,7 @@ Groq API를 사용하여 랜덤 CS 주제에 대한 글을 생성합니다.
 import os
 import re
 import random
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from groq import Groq
 
 # 프론트엔드 & DevOps 심화 주제 목록
@@ -247,7 +247,9 @@ def generate_post_content(topic: str) -> str:
 def create_post_file(topic: str, content: str):
     """마크다운 포스트 파일 생성"""
 
-    today = datetime.now()
+    # 한국 시간대(KST, UTC+9) 사용
+    kst = timezone(timedelta(hours=9))
+    today = datetime.now(kst)
     date_str = today.strftime("%Y-%m-%d")
     time_str = today.strftime("%Y-%m-%d %H:%M:%S +0900")
 
